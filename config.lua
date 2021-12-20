@@ -8,39 +8,43 @@ an executable
 ]]
 -- THESE ARE EXAMPLE CONFIGS FEEL FREE TO CHANGE TO WHATEVER YOU WANT
 
-vim.g.onedark_style = "darker"
 -- general
 lvim.log.level = "warn"
 lvim.format_on_save = true
 lvim.colorscheme = "onedarker"
-lvim.builtin.telescope.defaults.find_command = { "fd" }
-lvim.builtin.telescope.defaults.file_ignore_patterns = { ".git", "node_modules", "vendor" }
-
-lvim.builtin.nvimtree.hide_dotfiles = 0
-
-
 
 -- keymappings [view all the defaults by pressing <leader>Lk]
 lvim.leader = "space"
 -- add your own keymapping
 lvim.keys.normal_mode["<C-s>"] = ":w<cr>"
 -- unmap a default keymapping
--- lvim.keys.normal_mode["<C-Up>"] = ""
+-- lvim.keys.normal_mode["<C-Up>"] = false
 -- edit a default keymapping
 -- lvim.keys.normal_mode["<C-q>"] = ":q<cr>"
 
 -- Change Telescope navigation to use j and k for navigation and n and p for history in both input and normal mode.
--- lvim.builtin.telescope.on_config_done = function()
---   local actions = require "telescope.actions"
+-- we use protected-mode (pcall) just in case the plugin wasn't loaded yet.
+lvim.builtin.telescope.defaults = {
+  file_ignore_patterns = { ".git", "node_modules" },
+  path_display = { "smart" },
+}
+
+
+-- local _, actions = pcall(require, "telescope.actions")
+-- lvim.builtin.telescope.defaults.mappings = {
 --   -- for input mode
---   lvim.builtin.telescope.defaults.mappings.i["<C-j>"] = actions.move_selection_next
---   lvim.builtin.telescope.defaults.mappings.i["<C-k>"] = actions.move_selection_previous
---   lvim.builtin.telescope.defaults.mappings.i["<C-n>"] = actions.cycle_history_next
---   lvim.builtin.telescope.defaults.mappings.i["<C-p>"] = actions.cycle_history_prev
+--   i = {
+--     ["<C-j>"] = actions.move_selection_next,
+--     ["<C-k>"] = actions.move_selection_previous,
+--     ["<C-n>"] = actions.cycle_history_next,
+--     ["<C-p>"] = actions.cycle_history_prev,
+--   },
 --   -- for normal mode
---   lvim.builtin.telescope.defaults.mappings.n["<C-j>"] = actions.move_selection_next
---   lvim.builtin.telescope.defaults.mappings.n["<C-k>"] = actions.move_selection_previous
--- end
+--   n = {
+--     ["<C-j>"] = actions.move_selection_next,
+--     ["<C-k>"] = actions.move_selection_previous,
+--   },
+-- }
 
 -- Use which-key to add extra bindings with the leader-key prefix
 -- lvim.builtin.which_key.mappings["P"] = { "<cmd>Telescope projects<CR>", "Projects" }
@@ -54,19 +58,61 @@ lvim.keys.normal_mode["<C-s>"] = ":w<cr>"
 --   w = { "<cmd>Trouble lsp_workspace_diagnostics<cr>", "Diagnostics" },
 -- }
 
+lvim.builtin.which_key.mappings["s"] = {
+  name = "+Search",
+  r = { "<cmd>Trouble lsp_references<cr>", "References" },
+  f = { "<cmd>Trouble lsp_definitions<cr>", "Definitions" },
+  d = { "<cmd>Trouble lsp_document_diagnostics<cr>", "Diagnostics" },
+  q = { "<cmd>Trouble quickfix<cr>", "QuickFix" },
+  l = { "<cmd>Trouble loclist<cr>", "LocationList" },
+  w = { "<cmd>Trouble lsp_workspace_diagnostics<cr>", "Diagnostics" },
+}
+
+lvim.builtin.which_key.mappings["P"] = { "<cmd>Telescope projects<CR>", "Projects" }
+lvim.builtin.which_key.mappings["a"] = {
+        name = "AnyJumper",
+        j = { "<cmd>AnyJump<cr>", "any jumps" },
+        l = { "<cmd>AnyJumpLastResults<cr>", "any jumps back" },
+}
+
 -- TODO: User Config for predefined plugins
 -- After changing plugin config exit and reopen LunarVim, Run :PackerInstall :PackerCompile
 lvim.builtin.dashboard.active = true
 lvim.builtin.terminal.active = true
-lvim.builtin.nvimtree.side = "left"
+lvim.builtin.nvimtree.setup.view.side = "left"
 lvim.builtin.nvimtree.show_icons.git = 0
 
 -- if you don't want all the parsers change this to a table of the ones you want
-lvim.builtin.treesitter.ensure_installed = "maintained"
+lvim.builtin.treesitter.ensure_installed = {
+  "bash",
+  "c",
+  "javascript",
+  "json",
+  "lua",
+  "python",
+  "typescript",
+  "css",
+  "rust",
+  "java",
+  "yaml",
+}
+
 lvim.builtin.treesitter.ignore_install = { "haskell" }
 lvim.builtin.treesitter.highlight.enabled = true
 
 -- generic LSP settings
+
+-- ---@usage disable automatic installation of servers
+-- lvim.lsp.automatic_servers_installation = false
+
+-- ---@usage Select which servers should be configured manually. Requires `:LvimCacheRest` to take effect.
+-- See the full default list `:lua print(vim.inspect(lvim.lsp.override))`
+-- vim.list_extend(lvim.lsp.override, { "pyright" })
+
+-- ---@usage setup a server -- see: https://www.lunarvim.org/languages/#overriding-the-default-configuration
+-- local opts = {} -- check the lspconfig documentation for a list of all possible options
+-- require("lvim.lsp.manager").setup("pylsp", opts)
+
 -- you can set a custom on_attach function that will be used for all the language servers
 -- See <https://github.com/neovim/nvim-lspconfig#keybindings-and-completion>
 -- lvim.lsp.on_attach_callback = function(client, bufnr)
@@ -92,31 +138,58 @@ lvim.builtin.treesitter.highlight.enabled = true
 --   end
 -- end
 
--- set a formatter if you want to override the default lsp one (if it exists)
--- lvim.lang.python.formatters = {
+-- -- set a formatter, this will override the language server formatting capabilities (if it exists)
+-- local formatters = require "lvim.lsp.null-ls.formatters"
+-- formatters.setup {
+--   { exe = "black", filetypes = { "python" } },
+--   { exe = "isort", filetypes = { "python" } },
 --   {
---     exe = "black",
---   }
+--     exe = "prettier",
+--     ---@usage arguments to pass to the formatter
+--     -- these cannot contain whitespaces, options such as `--line-width 80` become either `{'--line-width', '80'}` or `{'--line-width=80'}`
+--     args = { "--print-with", "100" },
+--     ---@usage specify which filetypes to enable. By default a providers will attach to all the filetypes it supports.
+--     filetypes = { "typescript", "typescriptreact" },
+--   },
 -- }
--- set an additional linter
--- lvim.lang.python.linters = {
+
+-- -- set additional linters
+-- local linters = require "lvim.lsp.null-ls.linters"
+-- linters.setup {
+--   { exe = "flake8", filetypes = { "python" } },
 --   {
---     exe = "flake8",
---   }
+--     exe = "shellcheck",
+--     ---@usage arguments to pass to the formatter
+--     -- these cannot contain whitespaces, options such as `--line-width 80` become either `{'--line-width', '80'}` or `{'--line-width=80'}`
+--     args = { "--severity", "warning" },
+--   },
+--   {
+--     exe = "codespell",
+--     ---@usage specify which filetypes to enable. By default a providers will attach to all the filetypes it supports.
+--     filetypes = { "javascript", "python" },
+--   },
 -- }
 
 -- Additional Plugins
 lvim.plugins = {
-
-  {'jdhao/better-escape.vim', event = 'InsertEnter'},
-  {"vim-test/vim-test"},
-  
+    {"folke/tokyonight.nvim"},
+    {
+      "folke/trouble.nvim",
+      cmd = "TroubleToggle",
+    },
+    {
+      "pechorin/any-jump.vim",
+      config = function() 
+        vim.g.any_jump_disable_default_keybindings = 1
+        vim.g.any_jump_ignored_files = {"*.tmp", "*.temp", "/vendor/.*", ".git/*"}
+        vim.g.any_jump_search_prefered_engine = "ag"
+      end,
+    }
 }
+
+
 
 -- Autocommands (https://neovim.io/doc/user/autocmd.html)
 -- lvim.autocommands.custom_groups = {
 --   { "BufWinEnter", "*.lua", "setlocal ts=8 sw=8" },
 -- }
-
-lvim.lang.go.formatters = {{exe = "goimports"}}
-
