@@ -132,6 +132,8 @@ lvim.builtin.treesitter.ensure_installed = {
 lvim.builtin.treesitter.ignore_install = { "haskell" }
 lvim.builtin.treesitter.highlight.enabled = true
 
+lvim.builtin.dap.active = true
+lvim.lsp.override = { "rust" }
 -- generic LSP settings
 
 -- ---@usage disable automatic installation of servers
